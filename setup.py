@@ -12,4 +12,3 @@ options={ 'py2exe': { "compressed": 1,"optimize": 2,"bundle_files": 1} }
 #setup(options = options,console=["utilTool.py"],data_files=files) 
 setup(options = options,console=["splitCRCS.py"],data_files=files,zipfile=None)
 #setup(console=["crcsDetect.py"],data_files=files,zipfile=None) #zipFile使所有的Dll都打进exe
->>>>>>> 68738eb42da3bdca9c2cb3df561a919cb596e486
