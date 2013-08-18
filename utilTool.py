@@ -3,15 +3,40 @@ import paramiko
 import time
 import datetime
 
+
 sgwUser = "lluo"
 sgwPassword = "5even!@"
 sgwServer = "sgw.seven.com"
 sgwPort = 22
-strSSHServer1 = "ap27c.corp.seven.com" 
-SSHServer1Path = "/usr/local/seven/eng008-ap27c/logs/"
-strSSHServer2 = "ap28c.corp.seven.com" 
-SSHServer2Path = "/usr/local/seven/eng008-ap28c/logs/"
+#058, DEV, giant
+'''
+strSSHServer1 = "ap01.telx.7sys.net" 
+SSHServer1Path = "/app0/arm084-ap01f/logs/"
+strSSHServer2 = "ap02.telx.7sys.net" 
+SSHServer2Path = "/app0/arm084-ap02f/logs/"
+'''
+'''
+#053,stable,shark
+strSSHServer1 = "ap01.telx.7sys.net" 
+SSHServer1Path = "/app1/arm079-ap01a/logs/"
+strSSHServer2 = "ap02.telx.7sys.net" 
+SSHServer2Path = "/app1/arm079-ap02a/logs/"
+'''
+
+#061,tmous
+strSSHServer1 = "ap01.telx.7sys.net" 
+SSHServer1Path = "/app1/arm087-ap01i/logs/"
+strSSHServer2 = "ap02.telx.7sys.net" 
+SSHServer2Path = "/app1/arm087-ap02i/logs/"
+'''
+#056,tmous
+strSSHServer1 = "ap01.telx.7sys.net" 
+SSHServer1Path = "/app0/arm082-ap01d/logs/"
+strSSHServer2 = "ap02.telx.7sys.net" 
+SSHServer2Path = "/app0/arm082-ap02d/logs/"
+'''
 SSHServerUser= "voyeur"
+
 GREP_FILE = "crcs-transaction.log"
 
 def printAllOutput(out,err):
@@ -66,9 +91,9 @@ def grepAndDownloadFile(ssh,strSSHServer,sshServerPath,strGrepDay):
 
 def getAction(): 
     while(1): 
-        print "Input what you want to do:2 to get user list,3 to get OC version,2 or 3?" 
+        print "Input what you want to do:1 to get CRCS,2 to get user list,3 to get OC version,2 or 3?" 
         action = raw_input().strip()
-        if action in ["2","3"]: 
+        if action in ["1","2","3"]: 
             return action
                 
 def getCRCS(strGrepDay,ssh):
@@ -92,7 +117,7 @@ def grepUserList(ssh,strSSHServer,sshServerPath):
 
 def grepOCInfo(ssh,strSSHServer,sshServerPath,strGrepUser,strGrepDay):
     strGrepPath = sshServerPath+"relay-upc-transaction.log*" 
-	#grep -h -i "0-13fbf1e38cd03-0" \path\relay-upc-transaction.log |grep "2013-04-05
+    #grep -h -i "0-13fbf1e38cd03-0" \path\relay-upc-transaction.log |grep "2013-04-05
     grepCMD = "grep -h -i \"%s\" %s|grep %s |awk -F, '{print $1,$2,$8,$22}'  |sort|uniq" %(strGrepUser,strGrepPath,strGrepDay)
     print grepCMD
     loginCmd = "ssh -tt %s@%s" %(SSHServerUser,strSSHServer)
@@ -111,7 +136,7 @@ def getOCVersion(strGrepUser,strGrepDay):
     print "Trying to get %s's version on %s\r\n Time\t7TP\tIMEI\tOCVersion:" %(strGrepUser,strGrepDay)
     versionList = []
     for info in resultSet:
-        print info,
+        print "***"+info,
         temp = info.strip().split()
         if len(temp)>0:
             versionList.append(temp[-1])
@@ -119,7 +144,7 @@ def getOCVersion(strGrepUser,strGrepDay):
         print "---User %s's OC version on %s is %s" %(strGrepUser,strGrepDay,",".join(set(versionList)))
     else:
         print "Nothing is found"
-    
+
 def connect2SSH(): 
     print "start..."
     print "Try to connect to sgw..."
@@ -151,3 +176,14 @@ if __name__=="__main__":
                     getOCVersion(strGrepUser,strGrepDay) 
                     break 
         print "Finished...\n"
+    '''
+    userList = ["351554057949019","357194042912709","351751040023833"]
+    strGrepDay ="2013-05-04"
+    for user in userList:
+        getOCVersion(user.strip(),strGrepDay)
+    strGrepDay ="2013-05-07"
+    with open(r"D:\tmp\ticket\14515\userlist.txt") as userFile:
+        for user in userFile:
+            print user,
+            getOCVersion(user.strip(),strGrepDay)
+    '''
