@@ -150,4 +150,4 @@ if __name__=="__main__":
                     strGrepUser,strGrepDay = input.split(":") 
                     getOCVersion(strGrepUser,strGrepDay) 
                     break 
-        print "Finished...\n"
+        print "Finished...\n\n"
