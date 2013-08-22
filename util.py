@@ -138,6 +138,7 @@ class UtilCmd(cmd.Cmd):
     2) split crcs, command format:
         splitCRCS crcsFilePath
     10) exist, input quit or exit.
+
 '''
         #self.intro = "Simple command processor example."
     def do_test(self,str):

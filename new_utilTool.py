@@ -2,8 +2,12 @@
 import paramiko
 import time
 import datetime
-import util
+import cmd
+import sys
+import os
 
+import util
+import hostManager
 
 sgwUser = "lluo"
 sgwPassword = "5even!@"
@@ -23,19 +27,23 @@ SSHServer1Path = "/app1/arm079-ap01a/logs/"
 strSSHServer2 = "ap02.telx.7sys.net" 
 SSHServer2Path = "/app1/arm079-ap02a/logs/"
 '''
+
 #061,tmous
 strSSHServer1 = "ap01.telx.7sys.net" 
 SSHServer1Path = "/app1/arm087-ap01i/logs/"
 strSSHServer2 = "ap02.telx.7sys.net" 
 SSHServer2Path = "/app1/arm087-ap02i/logs/"
 
+
+
 '''
-#056,tmous
+#062,kddi
 strSSHServer1 = "ap01.telx.7sys.net" 
-SSHServer1Path = "/app0/arm082-ap01d/logs/"
+SSHServer1Path = "/app0/arm088-ap01j/logs/"
 strSSHServer2 = "ap02.telx.7sys.net" 
-SSHServer2Path = "/app0/arm082-ap02d/logs/"
+SSHServer2Path = "/app0/arm088-ap02j/logs/"
 '''
+
 
 SSHServerUser= "voyeur"
 
@@ -70,13 +78,13 @@ class CRCSDownloader(object):
         loginCmd = "ssh -tt %s@%s" %(SSHServerUser,self.server)
         sshCMD = loginCmd+' ' +grepCMD+' \> '+crcsDstPath+';exit'
         print "Grep result"
-        INInfo, stdout, stderr = ssh.exec_command(sshCMD)
+        INInfo, stdout, stderr = self.ssh.exec_command(sshCMD)
         printAllOutput(stdout,stderr)
         
         crcsPath = crcsDstPath
         sshCMD = "scp %s@%s:%s %s/" %(SSHServerUser,self.server,crcsPath,self.crcsFolderPath)
         print "Copy file from server to sgw"
-        INInfo, stdout, stderr = ssh.exec_command(sshCMD)
+        INInfo, stdout, stderr = self.ssh.exec_command(sshCMD)
         printAllOutput(stdout,stderr)
         print "finished copy crcs to swg server..."
         
@@ -154,6 +162,24 @@ class ServerOperator(object):
         #grepAndDownloadFile(ssh,strSSHServer1,SSHServer1Path,strGrepDay)
         #grepAndDownloadFile(ssh,strSSHServer2,SSHServer2Path,strGrepDay)
         print "finish greping file and download it from second server"
+    def getCRCSEx(self,strGrepDay,hostInfoList):
+        crcsFolderName = "%s_%d" %(CRCSDownloader.FOLDER_NAME_PREFIX,time.time())
+        crcsDirPath = "/home/%s/%s" %(sgwUser,crcsFolderName)
+        self.__mkdir(crcsDirPath)
+        #todo:need check if dir is created
+        crcsLoader1 = CRCSDownloader(self.ssh,hostInfoList[0][0],hostInfoList[0][1],crcsDirPath)
+        crcsLoader1.grepCRCS(strGrepDay)
+        crcsLoader2 = CRCSDownloader(self.ssh,hostInfoList[1][0],hostInfoList[1][1],crcsDirPath)
+        crcsLoader2.grepCRCS(strGrepDay)
+        finalCRCSName = "crcs_%s.log" %(strGrepDay,)
+        finalCRCSPath = self.__mergeAndSortCRCS(crcsDirPath,finalCRCSName);
+        self.__remoteZipFile(finalCRCSPath)
+        remoteFilePath = "%s.gz" %(finalCRCSPath,)
+        localPath = "./%s.gz" %(finalCRCSName)
+        self.__downloadFile(remoteFilePath,localPath)
+        #grepAndDownloadFile(ssh,strSSHServer1,SSHServer1Path,strGrepDay)
+        #grepAndDownloadFile(ssh,strSSHServer2,SSHServer2Path,strGrepDay)
+        print "finish greping file and download it from second server"
         
 
 def getAction(): 
@@ -189,9 +215,15 @@ def grepOCInfo(ssh,strSSHServer,sshServerPath,strGrepUser,strGrepDay):
     stdin, stdout, stderr = ssh.exec_command(sshCMD)
     return stdout.readlines()
 def getOCVersion(strGrepUser,strGrepDay):
+    hostInfoList = [(strSSHServer1,SSHServer1Path),(strSSHServer2,SSHServer2Path)]
+    getOCVersionEx(strGrepUser, strGrepDay, hostInfoList)
+def getOCVersionEx(strGrepUser,strGrepDay,hostInfoList):
+    if not hostInfoList:
+        print "no host info,exist"
+        return
     ssh = connect2SSH() 
-    list1 = grepOCInfo(ssh,strSSHServer1,SSHServer1Path,strGrepUser,strGrepDay)
-    list2 = grepOCInfo(ssh,strSSHServer2,SSHServer2Path,strGrepUser,strGrepDay)
+    list1 = grepOCInfo(ssh,hostInfoList[0][0],hostInfoList[0][1],strGrepUser,strGrepDay)
+    list2 = grepOCInfo(ssh,hostInfoList[1][0],hostInfoList[1][1],strGrepUser,strGrepDay)
     ssh.close()
     
     list3 = list1+list2
@@ -216,6 +248,90 @@ def connect2SSH():
     ssh.connect(sgwServer, sgwPort, sgwUser, sgwPassword)
     return ssh
 
+class CRCSUtilCmd(cmd.Cmd):
+    def __init__(self):
+        cmd.Cmd.__init__(self)
+        self.prompt = '''You can execute following command:
+    1) download CRCS command format:
+        downloadCRCS hostName time
+        Example: downloadCRCS demo062 2013-08-15 
+    2) get OC version,command format:
+        getVersion hostName userID time
+        Example: getVersion demo061 14122a6a52078 2013-05-01 or getVersion demo061 13a8 2013-05-01
+    3) filter log, command format:
+        filterLog logfolderPath
+    4) split crcs, command format:
+        splitCRCS crcsFilePath
+    10) exist, input quit or exit.
+
+'''
+    def do_downloadCRCS(self,parammeterLine):
+        parammeterLine = parammeterLine.strip()
+        hostName,strTime = parammeterLine.split()
+        print "host name: %s, search time:%s " %(hostName, strTime)
+        hostInfoList = hostManager.HostManager().getHostInfoList(hostName)
+        if not hostInfoList:
+            print "can't find host %s server information" %(hostName,)
+            return
+        print hostInfoList
+        ssh = connect2SSH()
+        serverOpr = ServerOperator(ssh)
+        serverOpr.getCRCSEx(strTime,hostInfoList)
+        ssh.close() 
+    #输入quit时退出
+    def do_getVersion(self,line):
+        line = line.strip()
+        hostName,strUserID,strTime = line.split()
+        print "host name:%s,user ID:%s,search time:%s" %(hostName,strUserID,strTime)
+        hostInfoList = hostManager.HostManager().getHostInfoList(hostName)
+        if not hostInfoList:
+            print "can't find host %s server information" %(hostName,)
+            return
+        print hostInfoList
+        getOCVersionEx(strUserID,strTime,hostInfoList)
+    def do_filterLog(self,logPath):
+        dirPath = "" 
+        if logPath and len(logPath)>0:
+            dirPath = logPath.strip()
+        if not dirPath:
+            dirPath = os.curdir+os.sep+"log"
+        if os.path.exists(dirPath):
+            util.filterFiles(dirPath)
+        else:
+            print "Dir %s does not exist" %(dirPath)
+            
+    def do_splitCRCS(self,crcsPath):
+        strCRCSPath = "" 
+        if crcsPath and len(crcsPath)>0:
+            strCRCSPath = crcsPath.strip()
+        if not strCRCSPath:
+            strCRCSPath = os.curdir+os.sep+"crcs.csv"
+        if os.path.exists(strCRCSPath):
+            util.splitCRCS(strCRCSPath)
+        else:
+            print "file %s does not exist" %(strCRCSPath)
+    #输入认不出命令时
+    def default(self,line):
+        print "The command you input is not supported"
+            
+    def do_quit(self, arg):
+        print "Quit"
+        sys.exit(1)
+    #输入exit时退出
+    def do_exit(self, arg):
+        print "Exit"
+        sys.exit(1)
+    def do_EOF(self, line):
+        return True
+    
+if __name__=="__main__":
+    print "start"
+    time.clock()
+    CRCSUtilCmd().cmdloop()
+    print "finished"
+    print "cost time: %d seconds" %(time.clock())
+  
+'''  
 if __name__=="__main__": 
     strGZFile = r"D:\temp\test\crcs_2013-08-05.log.gz"
     util.extractGzipFile(strGZFile) 
@@ -243,3 +359,4 @@ if __name__=="__main__":
                     break 
     
         print "Finished...\n"
+'''
