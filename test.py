@@ -109,10 +109,17 @@ def testGetFirst():
     print "upc list:"
     for upc in upcList:
         print upc,
+def test4():
+    str ="abc"
+    splitList = str.split(":")
+    print len(splitList) 
+    print "%s" %(",".join(splitList))
+    
+    pass
 if __name__=="__main__":
     print "start"
     time.clock()
-    test3()
+    test4()
     #test4()
     #testSplitFile()
     #testGetFirst()

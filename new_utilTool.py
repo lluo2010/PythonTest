@@ -239,7 +239,36 @@ def getOCVersionEx(strGrepUser,strGrepDay,hostInfoList):
         print "---User %s's OC version on %s is %s" %(strGrepUser,strGrepDay,",".join(set(versionList)))
     else:
         print "Nothing is found"
+def executeCMD(ssh,strSSHServer,sshServerPath,strCMD, strCMDFile):
+    strGrepPath = sshServerPath 
+    strCMDFile= strCMDFile.strip()
+    if strCMDFile and len(strCMDFile)>0:
+        strGrepPath = strGrepPath + os.sep+strCMDFile
+    
+    exeCMD = "%s %s" %(strCMD,strGrepPath)
+    print exeCMD
+    loginCmd = "ssh -tt %s@%s" %(SSHServerUser,strSSHServer)
+    sshCMD = loginCmd+' ' +exeCMD
+    print sshCMD
+    stdin, stdout, stderr = ssh.exec_command(sshCMD)
+    outputList = []
+    for outputLine in stdout:
+        outputList.append(outputLine)
+    #printAllOutput(stdout,stderr)
+    return outputList
 
+def executeCMDOnTrial(hostInfoList,strCMD,strCMDFile):
+    print "Start execute cmd on remote host..."
+    ssh = connect2SSH() 
+    list1 = executeCMD(ssh,hostInfoList[0][0],hostInfoList[0][1],strCMD,strCMDFile)
+    list2 = executeCMD(ssh,hostInfoList[1][0],hostInfoList[1][1],strCMD,strCMDFile)
+    ssh.close()
+    list3 = list1+list2
+    list3.sort()
+    print "execute command %s result:" %(strCMD)
+    for result in list3:
+        print result,
+    
 def connect2SSH(): 
     print "start..."
     print "Try to connect to sgw..."
@@ -262,6 +291,8 @@ class CRCSUtilCmd(cmd.Cmd):
         filterLog logfolderPath
     4) split crcs, command format:
         splitCRCS crcsFilePath
+    5) execute command on remote host, command format:
+        exeCMD:demo062:grep -ir "netlog,":crcs.log 
     10) exist, input quit or exit.
 
 '''
@@ -289,6 +320,27 @@ class CRCSUtilCmd(cmd.Cmd):
             return
         print hostInfoList
         getOCVersionEx(strUserID,strTime,hostInfoList)
+    def do_exeCMD(self, parammeterLine):
+        parammeterLine = parammeterLine.strip()
+        #exeCMD:demo062:grep -ir "netlog,":crcs.log 
+        splitResult = parammeterLine.split(":")
+        print splitResult
+        splitLen = len(splitResult)
+        if splitLen<3:
+            print "Parameter is missed"
+            return
+        hostName = splitResult[1].strip()
+        strCMD = splitResult[2].strip()
+        strFile = ""
+        if splitLen==4:
+            strFile = splitResult[3].strip()
+        print "host name %s" %(hostName,)
+        hostInfoList = hostManager.HostManager().getHostInfoList(hostName)
+        if not hostInfoList:
+            print "can't find host %s server information" %(hostName,)
+            return
+        print hostInfoList   
+        executeCMDOnTrial(hostInfoList,strCMD,strFile)
     def do_filterLog(self,logPath):
         dirPath = "" 
         if logPath and len(logPath)>0:
