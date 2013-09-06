@@ -5,6 +5,7 @@ import datetime
 import cmd
 import sys
 import os
+import multiprocessing
 
 import util
 import hostManager
@@ -281,18 +282,26 @@ class CRCSUtilCmd(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
         self.prompt = '''You can execute following command:
-    1) download CRCS command format:
+    1) Download CRCS command format:
         downloadCRCS hostName time
         Example: downloadCRCS demo062 2013-08-15 
-    2) get OC version,command format:
+    2) Get OC version,command format:
         getVersion hostName userID time
         Example: getVersion demo061 14122a6a52078 2013-05-01 or getVersion demo061 13a8 2013-05-01
-    3) filter log, command format:
+    3) Filter log, command format:
         filterLog logfolderPath
-    4) split crcs, command format:
+    4) Split crcs, command format:
         splitCRCS crcsFilePath
-    5) execute command on remote host, command format:
+    5) Execute command on remote host, command format:
         exeCMD:demo062:grep -ir "netlog,":crcs.log 
+    6) Run PCD, command format:
+        runPCD pcdPath
+    7) Run ddoc, command format:
+        runddoc
+    8) Open useful directory, command format:
+        openDIR
+    9) Run some useful operate I want, command format:
+        ready
     10) exist, input quit or exit.
 
 '''
@@ -362,6 +371,48 @@ class CRCSUtilCmd(cmd.Cmd):
             util.splitCRCS(strCRCSPath)
         else:
             print "file %s does not exist" %(strCRCSPath)
+    def runPCD(self,pcdPath):
+        if not pcdPath or len(pcdPath):
+            '''
+            print "please input PCD path"
+            return
+            '''
+            pcdPath = r"D:\Project\Analysis\pcd.jar"
+        pcdPath = pcdPath.strip()
+        if os.path.exists(pcdPath):
+            util.runPCD(pcdPath)
+        else:
+            print "PCD does not exist"
+    def do_runPCD(self,pcdPath):
+        p = multiprocessing.Process(target=self.runPCD,args=(pcdPath,))
+        p.start()
+        
+    def do_openDIR(self, parameter):
+        dirs = [r"D:\Project\Analysis\tool",r"D:\tmp\ticket"]
+        for strDir in dirs:
+            strOpenDirCmd = "explorer %s" %(strDir)
+            util.shell_executeInProcessor(strOpenDirCmd)
+    def do_runddoc(self,parameter):
+        appName = "ddoclog.jar"
+        dirPath = r"D:\Project\Analysis\tool"
+        disk = dirPath.split(":")[0]
+        strCMD = disk.strip()+": & cd "+dirPath+" & "+"java -jar "+dirPath+os.sep+ appName
+        print strCMD
+        util.shell_executeInProcessor(strCMD)
+        print "finish"
+        
+    def do_ready(self,parameter):
+        print "Open useful directory"
+        self.do_openDIR(None)
+        
+        print "Run PCD"
+        self.do_runPCD(None)
+        
+        print "Run cygwin"
+        util.shell_executeInProcessor(r"C:\cygwin\bin\mintty.exe -i /Cygwin-Terminal.ico -")
+        
+        print "Run ddoc tool"
+        self.do_runddoc(None)
     #输入认不出命令时
     def default(self,line):
         print "The command you input is not supported"

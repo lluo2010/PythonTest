@@ -4,6 +4,7 @@ import subprocess
 import fileinput
 import time
 import sys
+import util
 #from commands import *
 
 def test1():
@@ -116,10 +117,58 @@ def test4():
     print "%s" %(",".join(splitList))
     
     pass
+def test5():
+    import fileinput
+    userList = []
+    userTimeList = []
+    filePath = r"D:\tmp\ticket\temp\a"
+    for line in fileinput.input(filePath):
+        dt,user = line.split(",")
+        user = user.strip("\n")
+        if not user in userList:
+            userList.append(user)
+            userTimeList.append((user,dt))
+    for userInfo in userTimeList:
+        print "%s:%s" %(userInfo[0],userInfo[1])
+        
+def test6():
+    
+    for i in range(10):
+        strPath = r"D:\tmp\ticket\17946\temp"+os.sep+str(1)+"-"+str(i)+".log"
+        with open(strPath,"w") as tempFile:
+            pass
+
+import multiprocessing
+def newProcessor():       
+    print "new processor"
+    pcdPath = r"D:\Project\Analysis\pcd.jar"
+    pcdPath = pcdPath.strip()
+    if os.path.exists(pcdPath):
+        runPCDCommand = "java -Xmx1048m -jar %s" %(pcdPath,)
+        print runPCDCommand
+        result = util.shell_execute(runPCDCommand)
+        print result
+    print "end new processor"
+    pass
+def test7():
+    p = multiprocessing.Process(target=newProcessor)
+    p.start()
+    print "end test7"
+
+
+class A(object):
+    def runProcess(self):
+        p = multiprocessing.Process(target=self.worker,args=("hello",))
+        p.start()
+        pass
+    def worker(self,str):
+        print str
 if __name__=="__main__":
     print "start"
     time.clock()
-    test4()
+    #test7()
+    a = A()
+    a.runProcess()
     #test4()
     #testSplitFile()
     #testGetFirst()

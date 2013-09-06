@@ -7,6 +7,7 @@ import fileinput
 import time
 import gzip
 import cmd
+import multiprocessing
 
 def __test1():
     '''
@@ -32,6 +33,9 @@ def getFilelist(strPath,strExtName):
             tempMatchList = getFilelist(filePath,strExtName)
             matchedFileList.extend(tempMatchList)
     return matchedFileList
+def shell_executeInProcessor(cmd):
+    p = multiprocessing.Process(target=shell_execute,args=(cmd,))
+    p.start()
 
 def splitCRCS(crcsPath):
     userList = []
@@ -89,6 +93,9 @@ def extractGzipFile(strGZFile):
     finally:
         gzFile.close()
     pass
+def runPCD(pcdPath):
+    runPCDCommand = "java -Xmx1048m -jar %s" %(pcdPath,)
+    result = shell_execute(runPCDCommand)
 def testCase1():
     strPath = r"D:\tmp\ticket\TMobile\08-08\a"
     #test1()
@@ -178,9 +185,7 @@ class UtilCmd(cmd.Cmd):
             pcdPath = r"D:\Project\Analysis\pcd.jar"
         pcdPath = pcdPath.strip()
         if os.path.exists(pcdPath):
-            runPCDCommand = "java -Xmx1048m -jar %s" %(pcdPath,)
-            print runPCDCommand
-            result = shell_execute(runPCDCommand)
+            result = runPCD(pcdPath)
             print result
             pass
         else:
