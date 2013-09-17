@@ -8,6 +8,7 @@ import os
 import multiprocessing
 
 import util
+import crcsUtil
 import hostManager
 
 sgwUser = "lluo"
@@ -368,7 +369,7 @@ class CRCSUtilCmd(cmd.Cmd):
         if not strCRCSPath:
             strCRCSPath = os.curdir+os.sep+"crcs.csv"
         if os.path.exists(strCRCSPath):
-            util.splitCRCS(strCRCSPath)
+            crcsUtil.splitCRCS(strCRCSPath)
         else:
             print "file %s does not exist" %(strCRCSPath)
     def runPCD(self,pcdPath):

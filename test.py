@@ -167,8 +167,8 @@ if __name__=="__main__":
     print "start"
     time.clock()
     #test7()
-    a = A()
-    a.runProcess()
+    #a = A()
+    #a.runProcess()
     #test4()
     #testSplitFile()
     #testGetFirst()

@@ -37,34 +37,7 @@ def shell_executeInProcessor(cmd):
     p = multiprocessing.Process(target=shell_execute,args=(cmd,))
     p.start()
 
-def splitCRCS(crcsPath):
-    userList = []
-    fileList = []
-    strPath = os.path.dirname(crcsPath)+os.sep+"splitCRCS"
-    if os.path.exists(strPath):
-        shutil.rmtree(strPath, ignore_errors=True)
-    os.mkdir(strPath)
-    print "Split CRCS to %s" %(os.path.abspath(strPath))
-    for line in fileinput.input(crcsPath):
-        tempLine = line.strip("\n").split(",")
-        user = tempLine[1].strip()
-        index = -1
-        if user in userList:
-            index = userList.index(user, 0)
-        if index>=0:
-            userFile = fileList[index]
-            userFile.write(line)
-        else:
-            userList.append(user)
-            strOpenFile = strPath+os.sep+user+".csv"
-            userFile = open(strOpenFile,"w")
-            fileList.append(userFile)
-            userFile.write(line)
-    
-    for userFile in fileList:
-        userFile.close()
-            
-    pass
+
 def filterFiles(strSourcePath):
     #strSourcePath = r"D:\tmp\ticket\TMobile\08-08\log"
     csvList = getFilelist(strSourcePath, ".csv")
@@ -162,6 +135,7 @@ class UtilCmd(cmd.Cmd):
         else:
             print "Dir %s does not exist" %(dirPath)
             
+    '''
     def do_splitCRCS(self,crcsPath):
         strCRCSPath = "" 
         if crcsPath and len(crcsPath)>0:
@@ -172,9 +146,10 @@ class UtilCmd(cmd.Cmd):
             splitCRCS(strCRCSPath)
         else:
             print "file %s does not exist" %(strCRCSPath)
-        #输入认不出命令时
-        def default(self,line):
-            print "The command you input is not supported"
+    '''
+    #输入认不出命令时
+    def default(self,line):
+        print "The command you input is not supported"
             
     def do_runPCD(self, pcdPath):
         if not pcdPath:
